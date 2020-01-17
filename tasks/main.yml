@@ -1,0 +1,65 @@
+---
+# tasks file for packer
+
+# Install Packer
+# Referenced https://github.com/migibert/terraform-role/blob/master/tasks/main.yml
+- name: check packer version
+  shell: "packer --version 2>&1 | grep {{ packer_version }}"
+  failed_when: false
+  changed_when: false
+  register: packer_versions_match
+
+- name: download packer {{ packer_version }}
+  get_url:
+    url: "{{ packer_download_url }}/packer/{{ packer_version }}/packer_{{ packer_version }}_linux_amd64.zip"
+    dest: /tmp/packer.zip
+    checksum: "{{ packer_checksum }}"
+  when: packer_versions_match.rc != 0
+
+- name: extract packer.zip
+  unarchive:
+    src: /tmp/packer.zip
+    dest: /tmp
+    remote_src: yes
+  when: packer_versions_match.rc != 0
+
+- name: copy packer executable
+  become: yes
+  copy:
+    src: /tmp/packer
+    dest: /usr/bin/packer
+    owner: root
+    group: root
+    mode: 0755
+    remote_src: yes
+  when: packer_versions_match.rc != 0
+
+- name: download packer-builder-vsphere plugin
+  become: yes
+  get_url:
+    url: "{{ packer_vsphere_iso_url }}"
+    dest: /usr/bin/packer-builder-vsphere-iso
+  when: packer_vsphere_iso_url is defined
+
+- name: set permissions on packer-builder-vsphere plugin
+  become: yes
+  file:
+    path: /usr/bin/packer-builder-vsphere-iso
+    owner: root
+    group: root
+    mode: 0755
+    state: file
+  when: packer_vsphere_iso_url is defined
+
+- name: open the firewall for packer http server
+  become: yes
+  firewalld:
+    port: 8000-9000/tcp
+    permanent: yes
+    state: enabled
+
+- name: restart firewalld
+  become: yes
+  service:
+    name: firewalld
+    state: restarted

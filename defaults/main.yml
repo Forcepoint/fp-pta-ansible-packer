@@ -1,0 +1,7 @@
+---
+# defaults file for packer
+
+# https://releases.hashicorp.com/packer/
+packer_version: 1.2.5
+packer_checksum: sha256:bc58aa3f3db380b76776e35f69662b49f3cf15cf80420fc81a15ce971430824c
+packer_download_url: https://releases.hashicorp.com
